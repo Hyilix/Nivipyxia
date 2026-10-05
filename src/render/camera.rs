@@ -1,8 +1,7 @@
 // The camera of the application
 
-use crate::engine::canvas;
-
-use crate::engine::geometry::rectangle;
+use nivis::canvas;
+use nivis::geometry::rectangle;
 
 pub struct Camera {
     area: rectangle::Rectangle,

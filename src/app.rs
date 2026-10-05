@@ -8,12 +8,12 @@ use winit::event::WindowEvent;
 use winit::window::{Window, WindowId, WindowAttributes};
 use softbuffer::{Context, Surface};
 
-use crate::engine::canvas;
-use crate::render::camera;
-
-use crate::engine::geometry;
+use nivis::canvas;
+use nivis::geometry;
+use nivis::draw;
 use geometry::{triangle::Triangle, point::Point};
-use crate::engine::draw;
+
+use crate::render::camera;
 
 #[derive(Default)]
 pub struct App {

@@ -1,8 +1,9 @@
 [package]
-name = "rusty-pixel"
+name = "nivipyxia"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 winit = "0.31.0-beta.3"
 softbuffer = "0.4.8"
+nivis = { git = "https://github.com/Hyilix/nivis" }

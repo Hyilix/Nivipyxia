@@ -1,4 +1,4 @@
-use rusty_pixel::app::run_application;
+use nivipyxia::app::run_application;
 
 // Pixel representation:
 // Screen (ScreenBuffer) -> 0x00RRGGBB
