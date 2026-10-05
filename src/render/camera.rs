@@ -18,7 +18,7 @@ impl Default for Camera {
 
 // Boiler plate stuff
 impl Camera {
-    pub fn new(px: u32, py: u32, sx: u32, sy: u32, zoom: f32) -> Self {
+    pub fn new(px: i32, py: i32, sx: u32, sy: u32, zoom: f32) -> Self {
         Self {
             area: rectangle::Rectangle::new(px, py, sx, sy),
             zoom,
@@ -30,20 +30,20 @@ impl Camera {
         self.zoom
     }
 
-    pub fn get_position(&self) -> (u32, u32) {
-        (self.area.x, self.area.y)
+    pub fn get_position(&self) -> (i32, i32) {
+        (self.area.get_x(), self.area.get_y())
     }
 
     pub fn get_size(&self) -> (u32, u32) {
         (self.area.width, self.area.height)
     }
 
-    pub fn get_x(&self) -> u32 {
-        self.area.x
+    pub fn get_x(&self) -> i32 {
+        self.area.get_x()
     }
 
-    pub fn get_y(&self) -> u32 {
-        self.area.y
+    pub fn get_y(&self) -> i32 {
+        self.area.get_y()
     }
 
     pub fn get_width(&self) -> u32 {
@@ -87,13 +87,13 @@ impl Camera {
             screen_size.1 / 2 - clone.get_height() / 2,
         );
 
-        println!("Present position: {:?} , {}, {}", pos, self.area.x, self.area.y);
+        println!("Present position: {:?} , {}, {}", pos, self.area.get_x(), self.area.get_y());
 
         screen.blit(
             &clone.get_zone(
                 &rectangle::Rectangle::new(
-                    (pos.0 as i32 - self.area.x as i32).min(0) as u32,
-                    (pos.1 as i32 - self.area.y as i32).min(0) as u32,
+                    (pos.0 as i32 - self.area.get_x()).min(0),
+                    (pos.1 as i32 - self.area.get_y()).min(0),
                     self.area.width,
                     self.area.height,
                 )),

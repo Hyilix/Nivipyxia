@@ -1,6 +1,7 @@
+use crate::engine::geometry::point::Point;
+
 pub struct Circle {
-    pub x: i32,
-    pub y: i32,
+    pub center: Point,
     pub radius: u32,
 }
 
@@ -12,6 +13,6 @@ impl Default for Circle {
 
 impl Circle {
     pub fn new(x: i32, y: i32, radius: u32) -> Self {
-        Self {x, y, radius}
+        Self { center: Point::pair_to_point((x, y)), radius}
     }
 }

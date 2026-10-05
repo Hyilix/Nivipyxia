@@ -1,6 +1,7 @@
+use crate::engine::geometry::point::Point;
+
 pub struct Rectangle {
-    pub x: u32,
-    pub y: u32,
+    pub corner: Point,
     pub width: u32,
     pub height: u32,
 }
@@ -12,8 +13,8 @@ impl Default for Rectangle {
 }
 
 impl Rectangle {
-    pub fn new(x: u32, y: u32, width: u32, height: u32) -> Self {
-        Self {x, y, width, height}
+    pub fn new(x: i32, y: i32, width: u32, height: u32) -> Self {
+        Self { corner: Point::pair_to_point((x, y)), width, height}
     }
 
     // Get the rectangle area
@@ -24,5 +25,13 @@ impl Rectangle {
     // Get the rectangle perimeter
     pub fn perimeter(&self) -> u32 {
         (self.width + self.height) * 2
+    }
+
+    pub fn get_x(&self) -> i32 {
+        self.corner.x
+    }
+
+    pub fn get_y(&self) -> i32 {
+        self.corner.y
     }
 }

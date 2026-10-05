@@ -55,7 +55,7 @@ impl ApplicationHandler for App {
         self.canvas = canvas::Canvas::new(width, height, 0xFF000000);
         // NOTE: Arbitrary values for camera testing
         // self.camera = camera::Camera::new(width / 2 - width / 16, height / 2 - height / 16, width / 8, height / 8, 1f32);
-        self.camera = camera::Camera::new(0, 0, width, height, 16f32);
+        self.camera = camera::Camera::new(0, 0, width, height, 32f32);
 
         let line_test = geometry::line::Line::new(0, 4, 7, 1);
         let rect_test = geometry::rectangle::Rectangle::new(0, 0, 5, 7);

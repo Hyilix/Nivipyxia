@@ -102,16 +102,19 @@ impl Canvas {
         rect: &rectangle::Rectangle,
         color: u32,
     ) {
-        for y in 0..rect.height {
-            for x in 0..rect.width {
-                let dx = x + rect.x;
-                let dy = y + rect.y;
-                let src_index: usize = flat_index(dx, dy, self.width);
+        for y in 0..rect.height as i32 {
+            for x in 0..rect.width as i32 {
+                let dx = x + rect.get_x();
+                let dy = y + rect.get_y();
 
                 // Check for bounds
-                if dy >= self.height || dx >= self.width {
+                if dx < 0 || dy < 0 ||
+                    dy >= self.height as i32 || dx >= self.width as i32 {
                     continue;
                 }
+
+                let src_index: usize = flat_index(dx as u32, dy as u32, self.width);
+
 
                 self.pixels[src_index] = color;
             }
@@ -196,9 +199,9 @@ impl Canvas {
     ) -> Self {
         // Check if the zone is the entire area
 
-        println!("get_zone area dim: {}, {}, {}, {}", area.x, area.y, area.width, area.height);
+        println!("get_zone area dim: {}, {}, {}, {}", area.get_x(), area.get_y(), area.width, area.height);
 
-        if area.x == 0 && area.y == 0 &&
+        if area.get_x() == 0 && area.get_y() == 0 &&
             area.width >= self.width && area.height >= self.height {
             println!("return a clone");
             return self.clone();
@@ -206,18 +209,19 @@ impl Canvas {
 
         let mut pixels: Vec<u32> = vec![0xFF000000; (area.width * area.height) as usize];
 
-        for y in 0..area.height {
-            for x in 0..area.width {
-                let dy = y + area.y;
-                let dx = x + area.x;
+        for y in 0..area.height as i32 {
+            for x in 0..area.width as i32 {
+                let dy = y + area.get_y();
+                let dx = x + area.get_x();
 
                 // Check if out of bounds
-                if dx >= self.width || dy >= self.height {
+                if dx < 0 || dy < 0 ||
+                    dx >= self.width as i32 || dy >= self.height as i32 {
                     continue;
                 }
 
-                let pixels_index = flat_index(x, y, area.width);
-                let canvas_index = flat_index(dx, dy, self.width);
+                let pixels_index = flat_index(x as u32, y as u32, area.width);
+                let canvas_index = flat_index(dx as u32, dy as u32, self.width);
 
                 pixels[pixels_index] = self.pixels[canvas_index];
             }
