@@ -11,17 +11,13 @@ use softbuffer::{Context, Surface};
 use nivis::canvas;
 use nivis::geometry;
 use nivis::draw;
+use nivis::color::Color;
 use geometry::{triangle::Triangle, point::Point};
 
 use crate::render::camera;
 
 #[derive(Default)]
-pub struct App {
-    window: Option<Rc<dyn Window>>,
-    context: Option<Context<Rc<dyn Window>>>,
-    surface: Option<Surface<Rc<dyn Window>, Rc<dyn Window>>>,
-
-    canvas: canvas::Canvas,
+pub struct App { window: Option<Rc<dyn Window>>, context: Option<Context<Rc<dyn Window>>>, surface: Option<Surface<Rc<dyn Window>, Rc<dyn Window>>>, canvas: canvas::Canvas,
     camera: camera::Camera,
 }
 
@@ -52,7 +48,7 @@ impl ApplicationHandler for App {
             (size.width, size.height)
         };
 
-        self.canvas = canvas::Canvas::new(width, height, 0xFF000000);
+        self.canvas = canvas::Canvas::new(width, height, Color::new(0, 0, 0, 0xFF));
         // NOTE: Arbitrary values for camera testing
         // self.camera = camera::Camera::new(width / 2 - width / 16, height / 2 - height / 16, width / 8, height / 8, 1f32);
         self.camera = camera::Camera::new(0, 0, width, height, 32f32);
@@ -67,14 +63,14 @@ impl ApplicationHandler for App {
         );
 
         // NOTE: Camera testing
-        self.camera.get_canvas_mut().fill(0x00AAAAAA);
+        self.camera.get_canvas_mut().fill(Color::new(0xAA, 0xAA, 0xAA, 0));
 
-        self.camera.get_canvas_mut().checkerboard(0x00DDDDDD);
+        self.camera.get_canvas_mut().checkerboard(Color::new(0xDD, 0xDD, 0xDD, 0));
 
         // draw::line::simple(self.camera.get_canvas_mut(), &line_test, 0x00FF0000);
-        // draw::rectangle::filled(self.camera.get_canvas_mut(), &rect_test, 0x00FF0000);
+        // self.camera.get_canvas_mut().fill(0x00AAAAAA);
         // draw::circle::filled(self.camera.get_canvas_mut(), &circle_test, 0x00FF0000);
-        draw::triangle::filled(self.camera.get_canvas_mut(), &trig_test, 0x00FF0000);
+        draw::triangle::filled(self.camera.get_canvas_mut(), &trig_test, Color::new(0xFF, 0, 0, 0));
     }
 
     fn window_event(
@@ -104,7 +100,7 @@ impl ApplicationHandler for App {
                 surface.resize(NonZeroU32::new(width).unwrap(), NonZeroU32::new(height).unwrap()).unwrap();
 
                 let mut buffer = surface.buffer_mut().unwrap();
-                buffer.copy_from_slice(self.canvas.get_pixels());
+                buffer.copy_from_slice(&self.canvas.get_pixels_u32());
 
                 // for pixel in buffer.iter_mut() {
                 //     *pixel = 0x00000000;

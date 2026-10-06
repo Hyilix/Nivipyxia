@@ -719,7 +719,6 @@ dependencies = [
 [[package]]
 name = "nivis"
 version = "0.1.0"
-source = "git+https://github.com/Hyilix/nivis#445702328061d8ffabfa5fa5997ad55219cfac9e"
 
 [[package]]
 name = "num_enum"
