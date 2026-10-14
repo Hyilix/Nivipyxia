@@ -1,11 +1,13 @@
 // Module responsible for handling the window and rendering to it
 use std::rc::Rc;
-use std::num::NonZeroU32;
+use std::collections::HashSet;
 
 use winit::application::ApplicationHandler;
 use winit::event_loop::{ActiveEventLoop, EventLoop, ControlFlow};
-use winit::event::WindowEvent;
+use winit::event;
+use event::WindowEvent;
 use winit::window::{Window, WindowId, WindowAttributes};
+use winit::keyboard::{PhysicalKey, KeyCode};
 use softbuffer::{Context, Surface};
 
 use nivis::canvas;
@@ -14,11 +16,19 @@ use nivis::draw;
 use nivis::color::Color;
 use geometry::{triangle::Triangle, point::Point};
 
+use crate::events::{redraw_request, mouse_pressed};
+
+use crate::mouse;
 use crate::render::camera;
 
 #[derive(Default)]
-pub struct App { window: Option<Rc<dyn Window>>, context: Option<Context<Rc<dyn Window>>>, surface: Option<Surface<Rc<dyn Window>, Rc<dyn Window>>>, canvas: canvas::Canvas,
+pub struct App {
+    window: Option<Rc<dyn Window>>,
+    context: Option<Context<Rc<dyn Window>>>,
+    surface: Option<Surface<Rc<dyn Window>, Rc<dyn Window>>>,
+    canvas: canvas::Canvas,
     camera: camera::Camera,
+    mouse: mouse::Mouse,
 }
 
 impl ApplicationHandler for App {
@@ -45,17 +55,21 @@ impl ApplicationHandler for App {
 
         let (width, height) = {
             let size = self.window.as_ref().unwrap().surface_size();
+            println!("window size {:?}", size);
             (size.width, size.height)
         };
 
         self.canvas = canvas::Canvas::new(width, height, Color::new(0, 0, 0, 0xFF));
+        self.camera = camera::Camera::new(0, 0, width / 2, width / 2, 32f32);
+
+        self.mouse = mouse::Mouse::default();
+
         // NOTE: Arbitrary values for camera testing
         // self.camera = camera::Camera::new(width / 2 - width / 16, height / 2 - height / 16, width / 8, height / 8, 1f32);
-        self.camera = camera::Camera::new(0, 0, width, height, 32f32);
 
-        let line_test = geometry::line::Line::new(0, 4, 7, 1);
-        let rect_test = geometry::rectangle::Rectangle::new(0, 0, 5, 7);
-        let circle_test = geometry::circle::Circle::new(8, 8, 4);
+        // let line_test = geometry::line::Line::new(0, 4, 7, 1);
+        // let rect_test = geometry::rectangle::Rectangle::new(0, 0, 5, 7);
+        // let circle_test = geometry::circle::Circle::new(8, 8, 4);
         let trig_test = Triangle::new(
             Point::pair_to_point((0, 0)),
             Point::pair_to_point((5, 15)),
@@ -88,30 +102,52 @@ impl ApplicationHandler for App {
                 println!("Window focus is now {state}");
             },
             WindowEvent::RedrawRequested => {
-                let (width, height) = {
-                    let size = self.window.as_ref().unwrap().surface_size();
-                    (size.width, size.height)
-                };
-
-                self.canvas.scale_to(width, height);
-                self.camera.present_to_screen(&mut self.canvas, (width, height));
-
-                let surface = self.surface.as_mut().unwrap();
-                surface.resize(NonZeroU32::new(width).unwrap(), NonZeroU32::new(height).unwrap()).unwrap();
-
-                let mut buffer = surface.buffer_mut().unwrap();
-                buffer.copy_from_slice(&self.canvas.get_pixels_u32());
-
-                // for pixel in buffer.iter_mut() {
-                //     *pixel = 0x00000000;
-                // }
-
-                buffer.present().unwrap();
-
-                // self.window.as_ref().unwrap().request_redraw();
+                redraw_request::redraw_request(&mut self.canvas, &mut self.camera, &mut self.surface, &self.window);
             },
             WindowEvent::KeyboardInput {event, .. } => {
                 println!("Keyboard event: {:?}", event);
+                if !event.state.is_pressed() { return; }
+
+                // TODO: Make the vector add with input to move once, so it can move both dimensions
+                if let PhysicalKey::Code(code) = event.physical_key {
+                    println!("code: {:?}", code);
+                    let mut move_vec = Point::pair_to_point((0, 0));
+                    let moved = match code {
+                        winit::keyboard::KeyCode::ArrowUp => {
+                            println!("Move UP!");
+                            move_vec += Point::new(0, 1);
+                            true
+                        },
+                        winit::keyboard::KeyCode::ArrowDown => {
+                            println!("Move DOWN!");
+                            move_vec += Point::new(0, -1);
+                            true
+                        },
+                        winit::keyboard::KeyCode::ArrowLeft => {
+                            println!("Move LEFT!");
+                            move_vec += Point::new(1, 0);
+                            true
+                        },
+                        winit::keyboard::KeyCode::ArrowRight => {
+                            println!("Move RIGHT!");
+                            move_vec += Point::new(-1, 0);
+                            true
+                        },
+                        _ => false
+                    };
+
+                    if moved {
+                        self.camera.move_with(move_vec);
+                        self.window.as_ref().unwrap().request_redraw();
+                    }
+                }
+            },
+            WindowEvent::PointerButton {state, position, ..} => {
+                println!("Mouse state is : {:?} at position {} {}.", state, position.x, position.y);
+                self.mouse.update_position(position);
+                self.mouse.set_pressed(event::ElementState::is_pressed(state));
+
+                // mouse_pressed::mouse_pressed();
             },
             _ => (),
         }

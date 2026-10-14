@@ -1,9 +1,15 @@
 // The camera of the application
 
 use nivis::canvas;
-use nivis::geometry::rectangle;
+use nivis::geometry::rectangle::{self, Rectangle};
+use nivis::geometry::point::Point;
+use nivis::draw;
+use nivis::color::Color;
+
+use std::cmp;
 
 pub struct Camera {
+    presentation_area: rectangle::Rectangle,
     area: rectangle::Rectangle,
     zoom: f32,
     canvas: canvas::Canvas,
@@ -19,6 +25,7 @@ impl Default for Camera {
 impl Camera {
     pub fn new(px: i32, py: i32, sx: u32, sy: u32, zoom: f32) -> Self {
         Self {
+            presentation_area: rectangle::Rectangle::new(0, 0, sx, sy),
             area: rectangle::Rectangle::new(px, py, sx, sy),
             zoom,
             canvas: canvas::Canvas::default(),
@@ -53,12 +60,28 @@ impl Camera {
         self.area.height
     }
 
-    pub fn set_width(&mut self, new_w: u32) {
-        self.area.width = new_w;
+    pub fn set_width(&mut self, new: u32) {
+        self.area.width = new;
     }
 
-    pub fn set_height(&mut self, new_h: u32) {
-        self.area.height = new_h;
+    pub fn set_height(&mut self, new: u32) {
+        self.area.height = new;
+    }
+
+    pub fn set_presentation_width(&mut self, new_w: u32) {
+        self.presentation_area.width = new_w;
+    }
+
+    pub fn set_presentation_height(&mut self, new_h: u32) {
+        self.presentation_area.height = new_h;
+    }
+
+    pub fn set_x(&mut self, new: i32) {
+        self.area.corner.x = new;
+    }
+
+    pub fn set_y(&mut self, new: i32) {
+        self.area.corner.y = new;
     }
 
     pub fn get_canvas(&self) -> &canvas::Canvas {
@@ -73,29 +96,89 @@ impl Camera {
 // Camera methods
 impl Camera {
     pub fn present_to_screen(
-        &self,
+        &mut self,
         screen: &mut canvas::Canvas,
         screen_size: (u32, u32),
     ) {
-        let mut clone: canvas::Canvas = self.canvas.clone();
+        let clone: canvas::Canvas = self.canvas.clone();
 
-        clone.scale_by(self.zoom);
+        // clone.scale_by(self.zoom);
 
-        let pos : (u32, u32) = (
-            screen_size.0 / 2 - clone.get_width() / 2,
-            screen_size.1 / 2 - clone.get_height() / 2,
+        // TODO: use a clamp function
+        // Clamp the size of the area
+        // if self.area.width > self.canvas.get_width() {
+        //     self.area.width = self.canvas.get_width();
+        //     self.area.corner.x = 0;
+        // }
+        //
+        // if self.area.height > self.canvas.get_width() {
+        //     self.area.height = self.canvas.get_height();
+        //     self.area.corner.x = 0;
+        // }
+
+        // Corner position of the camera centered on the center of screen
+        let pos_cam : (i32, i32) = (
+            (screen_size.0 / 2 - self.presentation_area.get_width() / 2) as i32,
+            (screen_size.1 / 2 - self.presentation_area.get_height() / 2) as i32,
         );
 
-        println!("Present position: {:?} , {}, {}", pos, self.area.get_x(), self.area.get_y());
+        // self.area.scale_from_center(self.zoom);
+        self.area.width = (self.presentation_area.get_width() as f32 / self.zoom) as u32;
+        self.area.height = (self.presentation_area.get_height() as f32 / self.zoom) as u32;
+
+        let mut canvas_zone = self.canvas.get_zone(&self.area);
+        canvas_zone.scale_by(self.zoom);
+        // canvas_zone.scale_to(
+        //     self.presentation_area.get_width(),
+        //     self.presentation_area.get_height()
+        // );
+
+        // Corner position of the canvas centered on the center of screen
+        let pos_canvas : (i32, i32) = (
+            (screen_size.0 / 2 - canvas_zone.get_width() / 2) as i32,
+            (screen_size.1 / 2 - canvas_zone.get_height() / 2) as i32,
+        );
+
+        let pos: (i32, i32) = (
+            cmp::max(pos_cam.0, pos_canvas.0),
+            cmp::max(pos_cam.1, pos_canvas.1)
+        );
 
         screen.blit(
-            &clone.get_zone(
-                &rectangle::Rectangle::new(
-                    (pos.0 as i32 - self.area.get_x()).min(0),
-                    (pos.1 as i32 - self.area.get_y()).min(0),
-                    self.area.width,
-                    self.area.height,
-                )),
-            pos);
+            &canvas_zone,
+            Point::pair_to_point(pos)
+        );
+
+        let outline_rect: rectangle::Rectangle = 
+            rectangle::Rectangle::new(pos.0 - 1, pos.1 - 1, canvas_zone.get_width() + 1, canvas_zone.get_height() + 1);
+
+        draw::rectangle::outlined(screen, &outline_rect, Color::new(0, 0xFF, 0, 0));
+    }
+
+    // Move the camera position with the specified vector
+    pub fn move_with(&mut self, vec: Point) {
+        let mut new_pos: Point = Point::pair_to_point(
+            (self.area.corner.x - vec.x,
+             self.area.corner.y - vec.y)
+        );
+
+        // Clamp
+        if new_pos.x < 0 {
+            new_pos.x = 0;
+        }
+
+        if new_pos.x + self.area.get_width() as i32 >= self.canvas.get_width() as i32 {
+            new_pos.x -= new_pos.x + self.area.get_width() as i32 - self.canvas.get_width() as i32;
+        }
+
+        if new_pos.y < 0 {
+            new_pos.y = 0;
+        }
+
+        if new_pos.y + self.area.get_height() as i32 >= self.canvas.get_height() as i32 {
+            new_pos.y -= new_pos.y + self.area.get_height() as i32 - self.canvas.get_height() as i32;
+        }
+
+        self.area.corner = new_pos;
     }
 }
