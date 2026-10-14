@@ -40,6 +40,10 @@ impl Camera {
         (self.area.get_x(), self.area.get_y())
     }
 
+    pub fn get_corner(&self) -> Point {
+        self.area.corner
+    }
+
     pub fn get_size(&self) -> (u32, u32) {
         (self.area.width, self.area.height)
     }
@@ -95,27 +99,31 @@ impl Camera {
 
 // Camera methods
 impl Camera {
+    pub fn get_camera_drawing_size(&self, screen_size: (u32, u32)) -> (u32, u32) {
+        let mut result: (u32, u32) = (
+            (self.presentation_area.get_width() as f32 / self.zoom).ceil() as u32,
+            (self.presentation_area.get_height() as f32 / self.zoom).ceil() as u32
+        );
+
+        if result.0 >= self.canvas.get_width() {
+            result.0 = self.canvas.get_width();
+        }
+
+        if result.1 >= self.canvas.get_height() {
+            result.1 = self.canvas.get_height();
+        }
+
+        result.0 = (result.0 as f32 * self.zoom) as u32;
+        result.1 = (result.1 as f32 * self.zoom) as u32;
+
+        result
+    }
+
     pub fn present_to_screen(
         &mut self,
         screen: &mut canvas::Canvas,
         screen_size: (u32, u32),
     ) {
-        let clone: canvas::Canvas = self.canvas.clone();
-
-        // clone.scale_by(self.zoom);
-
-        // TODO: use a clamp function
-        // Clamp the size of the area
-        // if self.area.width > self.canvas.get_width() {
-        //     self.area.width = self.canvas.get_width();
-        //     self.area.corner.x = 0;
-        // }
-        //
-        // if self.area.height > self.canvas.get_width() {
-        //     self.area.height = self.canvas.get_height();
-        //     self.area.corner.x = 0;
-        // }
-
         // Corner position of the camera centered on the center of screen
         let pos_cam : (i32, i32) = (
             (screen_size.0 / 2 - self.presentation_area.get_width() / 2) as i32,
@@ -123,8 +131,8 @@ impl Camera {
         );
 
         // self.area.scale_from_center(self.zoom);
-        self.area.width = (self.presentation_area.get_width() as f32 / self.zoom) as u32;
-        self.area.height = (self.presentation_area.get_height() as f32 / self.zoom) as u32;
+        self.area.width = (self.presentation_area.get_width() as f32 / self.zoom).ceil() as u32;
+        self.area.height = (self.presentation_area.get_height() as f32 / self.zoom).ceil() as u32;
 
         let mut canvas_zone = self.canvas.get_zone(&self.area);
         canvas_zone.scale_by(self.zoom);
@@ -148,6 +156,11 @@ impl Camera {
             &canvas_zone,
             Point::pair_to_point(pos)
         );
+
+        let presentation_rect: rectangle::Rectangle = 
+            rectangle::Rectangle::new(pos_cam.0 - 1, pos_cam.1 - 1, self.presentation_area.get_width() + 1, self.presentation_area.get_height() + 1);
+
+        draw::rectangle::outlined(screen, &presentation_rect, Color::new(0xFF, 0, 0, 0));
 
         let outline_rect: rectangle::Rectangle = 
             rectangle::Rectangle::new(pos.0 - 1, pos.1 - 1, canvas_zone.get_width() + 1, canvas_zone.get_height() + 1);

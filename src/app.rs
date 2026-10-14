@@ -12,9 +12,9 @@ use softbuffer::{Context, Surface};
 
 use nivis::canvas;
 use nivis::geometry;
-use nivis::draw;
+use nivis::draw::{self, rectangle};
 use nivis::color::Color;
-use geometry::{triangle::Triangle, point::Point};
+use geometry::{triangle::Triangle, point::Point, rectangle::Rectangle};
 
 use crate::events::{redraw_request, mouse_pressed};
 
@@ -60,7 +60,7 @@ impl ApplicationHandler for App {
         };
 
         self.canvas = canvas::Canvas::new(width, height, Color::new(0, 0, 0, 0xFF));
-        self.camera = camera::Camera::new(0, 0, width / 2, width / 2, 32f32);
+        self.camera = camera::Camera::new(0, 0, width / 2, width / 2, 128f32);
 
         self.mouse = mouse::Mouse::default();
 
@@ -70,11 +70,11 @@ impl ApplicationHandler for App {
         // let line_test = geometry::line::Line::new(0, 4, 7, 1);
         // let rect_test = geometry::rectangle::Rectangle::new(0, 0, 5, 7);
         // let circle_test = geometry::circle::Circle::new(8, 8, 4);
-        let trig_test = Triangle::new(
-            Point::pair_to_point((0, 0)),
-            Point::pair_to_point((5, 15)),
-            Point::pair_to_point((12, 3))
-        );
+        // let trig_test = Triangle::new(
+        //     Point::pair_to_point((0, 0)),
+        //     Point::pair_to_point((5, 15)),
+        //     Point::pair_to_point((12, 3))
+        // );
 
         // NOTE: Camera testing
         self.camera.get_canvas_mut().fill(Color::new(0xAA, 0xAA, 0xAA, 0));
@@ -84,7 +84,7 @@ impl ApplicationHandler for App {
         // draw::line::simple(self.camera.get_canvas_mut(), &line_test, 0x00FF0000);
         // self.camera.get_canvas_mut().fill(0x00AAAAAA);
         // draw::circle::filled(self.camera.get_canvas_mut(), &circle_test, 0x00FF0000);
-        draw::triangle::filled(self.camera.get_canvas_mut(), &trig_test, Color::new(0xFF, 0, 0, 0));
+        // draw::triangle::filled(self.camera.get_canvas_mut(), &trig_test, Color::new(0xFF, 0, 0, 0));
     }
 
     fn window_event(
@@ -101,16 +101,21 @@ impl ApplicationHandler for App {
             WindowEvent::Focused(state) => {
                 println!("Window focus is now {state}");
             },
+            // TODO: simplify redraw request function
             WindowEvent::RedrawRequested => {
                 redraw_request::redraw_request(&mut self.canvas, &mut self.camera, &mut self.surface, &self.window);
             },
             WindowEvent::KeyboardInput {event, .. } => {
                 println!("Keyboard event: {:?}", event);
-                if !event.state.is_pressed() { return; }
+                if !event.state.is_pressed() {
+                    return;
+                }
 
                 // TODO: Make the vector add with input to move once, so it can move both dimensions
                 if let PhysicalKey::Code(code) = event.physical_key {
                     println!("code: {:?}", code);
+
+                    // Get the direction vector to move the camera with
                     let mut move_vec = Point::pair_to_point((0, 0));
                     let moved = match code {
                         winit::keyboard::KeyCode::ArrowUp => {
@@ -136,6 +141,7 @@ impl ApplicationHandler for App {
                         _ => false
                     };
 
+                    // Update camera position and update screen
                     if moved {
                         self.camera.move_with(move_vec);
                         self.window.as_ref().unwrap().request_redraw();
@@ -147,7 +153,38 @@ impl ApplicationHandler for App {
                 self.mouse.update_position(position);
                 self.mouse.set_pressed(event::ElementState::is_pressed(state));
 
-                // mouse_pressed::mouse_pressed();
+                let win_size: (u32, u32) = {
+                    let size = self.window.as_ref().unwrap().surface_size();
+                    (size.width, size.height)
+                };
+
+                // Get information about the displayed canvas
+                let can_size = self.camera.get_camera_drawing_size(win_size);
+                let can_rect = Rectangle::new(
+                    (win_size.0 / 2 - can_size.0 / 2) as i32,
+                    (win_size.1 / 2 - can_size.1 / 2) as i32,
+                    can_size.0,
+                    can_size.1
+                );
+
+                // Mouse not in canvas
+                if !can_rect.has_point(Point::pair_to_point((position.x as i32, position.y as i32))) {
+                    return;
+                }
+
+                let draw_pos: Point = Point::new(
+                    (position.x as i32 - can_rect.corner.x) / self.camera.get_zoom() as i32,
+                    (position.y as i32 - can_rect.corner.y) / self.camera.get_zoom() as i32
+                );
+
+                println!("can_rect = {:?} ; draw_pos = {:?}", can_rect, draw_pos);
+
+                let point_add = self.camera.get_corner();
+
+                self.camera.get_canvas_mut().draw_point(draw_pos + point_add, Color::new(0xFF, 0, 0, 0));
+
+                // Update screen
+                self.window.as_ref().unwrap().request_redraw();
             },
             _ => (),
         }
