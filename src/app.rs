@@ -60,7 +60,7 @@ impl ApplicationHandler for App {
         };
 
         self.canvas = canvas::Canvas::new(width, height, Color::new(0, 0, 0, 0xFF));
-        self.camera = camera::Camera::new(0, 0, width / 2, width / 2, 128f32);
+        self.camera = camera::Camera::new(0, 0, width / 2, width / 2, 32f32);
 
         self.mouse = mouse::Mouse::default();
 
@@ -185,6 +185,15 @@ impl ApplicationHandler for App {
 
                 // Update screen
                 self.window.as_ref().unwrap().request_redraw();
+            },
+            WindowEvent::MouseWheel {delta, ..} => {
+                println!("delta: {:?}", delta);
+
+                if let event::MouseScrollDelta::LineDelta(_, val) = delta {
+                    // Change zoom
+                    self.camera.add_zoom(val);
+                    self.window.as_ref().unwrap().request_redraw();
+                }
             },
             _ => (),
         }

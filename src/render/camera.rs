@@ -36,6 +36,10 @@ impl Camera {
         self.zoom
     }
 
+    pub fn add_zoom(&mut self, val: f32) {
+        self.zoom += val;
+    }
+
     pub fn get_position(&self) -> (i32, i32) {
         (self.area.get_x(), self.area.get_y())
     }
