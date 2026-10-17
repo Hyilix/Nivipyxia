@@ -138,28 +138,41 @@ impl Camera {
         self.area.width = (self.presentation_area.get_width() as f32 / self.zoom).ceil() as u32;
         self.area.height = (self.presentation_area.get_height() as f32 / self.zoom).ceil() as u32;
 
-        let mut canvas_zone = self.canvas.get_zone(&self.area);
-        canvas_zone.scale_by(self.zoom);
+        // let mut canvas_zone = self.canvas.get_zone(&self.area);
+        // canvas_zone.scale_by(self.zoom);
         // canvas_zone.scale_to(
         //     self.presentation_area.get_width(),
         //     self.presentation_area.get_height()
         // );
 
-        // Corner position of the canvas centered on the center of screen
-        let pos_canvas : (i32, i32) = (
-            (screen_size.0 / 2 - canvas_zone.get_width() / 2) as i32,
-            (screen_size.1 / 2 - canvas_zone.get_height() / 2) as i32,
+        let zone_w = (self.area.width as f32 * self.zoom).min(self.canvas.get_width() as f32 * self.zoom);
+        let zone_h = (self.area.height as f32 * self.zoom).min(self.canvas.get_height() as f32 * self.zoom);
+
+        let pos_canvas = (
+            (screen_size.0 / 2 - zone_w as u32 / 2) as i32,
+            (screen_size.1 / 2 - zone_h as u32 / 2) as i32
         );
+
+        // Corner position of the canvas centered on the center of screen
+        // let pos_canvas : (i32, i32) = (
+        //     (screen_size.0 / 2 - canvas_zone.get_width() / 2) as i32,
+        //     (screen_size.1 / 2 - canvas_zone.get_height() / 2) as i32,
+        // );
 
         let pos: (i32, i32) = (
             cmp::max(pos_cam.0, pos_canvas.0),
             cmp::max(pos_cam.1, pos_canvas.1)
         );
 
-        screen.blit(
-            &canvas_zone,
-            Point::pair_to_point(pos)
-        );
+        // screen.blit(
+        //     &canvas_zone,
+        //     Point::pair_to_point(pos)
+        // );
+
+        println!("area {:?} at pos {:?}", self.area, pos);
+        // println!("screen size: {:?}", (screen.get_width(), screen.get_height()));
+
+        screen.blit_area_zoomed(&self.canvas, &self.area, Point::pair_to_point(pos), self.zoom);
 
         let presentation_rect: rectangle::Rectangle = 
             rectangle::Rectangle::new(pos_cam.0 - 1, pos_cam.1 - 1, self.presentation_area.get_width() + 1, self.presentation_area.get_height() + 1);
@@ -167,7 +180,7 @@ impl Camera {
         draw::rectangle::outlined(screen, &presentation_rect, Color::new(0xFF, 0, 0, 0));
 
         let outline_rect: rectangle::Rectangle = 
-            rectangle::Rectangle::new(pos.0 - 1, pos.1 - 1, canvas_zone.get_width() + 1, canvas_zone.get_height() + 1);
+            rectangle::Rectangle::new(pos.0 - 1, pos.1 - 1, zone_w as u32 + 1, zone_h as u32 + 1);
 
         draw::rectangle::outlined(screen, &outline_rect, Color::new(0, 0xFF, 0, 0));
     }

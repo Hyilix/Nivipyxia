@@ -1,6 +1,7 @@
 // Module responsible for handling the window and rendering to it
 use std::rc::Rc;
 use std::collections::HashSet;
+use std::time::UNIX_EPOCH;
 
 use winit::application::ApplicationHandler;
 use winit::event_loop::{ActiveEventLoop, EventLoop, ControlFlow};
@@ -16,7 +17,7 @@ use nivis::draw::{self, rectangle};
 use nivis::color::Color;
 use geometry::{triangle::Triangle, point::Point, rectangle::Rectangle};
 
-use crate::events::{redraw_request, mouse_pressed};
+use crate::events::{redraw_request};
 
 use crate::mouse;
 use crate::render::camera;
@@ -103,7 +104,13 @@ impl ApplicationHandler for App {
             },
             // TODO: simplify redraw request function
             WindowEvent::RedrawRequested => {
+                // Measure time elapes for screen update
+                let now = std::time::Instant::now();
+
+                // Update the screen
                 redraw_request::redraw_request(&mut self.canvas, &mut self.camera, &mut self.surface, &self.window);
+
+                println!("Time elapsed to redraw screen: {}", now.elapsed().as_millis());
             },
             WindowEvent::KeyboardInput {event, .. } => {
                 println!("Keyboard event: {:?}", event);
@@ -148,9 +155,9 @@ impl ApplicationHandler for App {
                     }
                 }
             },
-            WindowEvent::PointerButton {state, position, ..} => {
-                println!("Mouse state is : {:?} at position {} {}.", state, position.x, position.y);
-                self.mouse.update_position(position);
+            WindowEvent::PointerButton {state, position, button, ..} => {
+                println!("Mouse state is : {:?} ; button = {:?} at position {} {}.", state, button, position.x, position.y);
+
                 self.mouse.set_pressed(event::ElementState::is_pressed(state));
 
                 let win_size: (u32, u32) = {
@@ -158,36 +165,19 @@ impl ApplicationHandler for App {
                     (size.width, size.height)
                 };
 
-                // Get information about the displayed canvas
-                let can_size = self.camera.get_camera_drawing_size(win_size);
-                let can_rect = Rectangle::new(
-                    (win_size.0 / 2 - can_size.0 / 2) as i32,
-                    (win_size.1 / 2 - can_size.1 / 2) as i32,
-                    can_size.0,
-                    can_size.1
-                );
+                // Check if mouse is in canvas and get position to it
+                if let Some(draw_pos) = self.mouse.to_camera_position(&mut self.camera, (position.x as i32, position.y as i32), win_size) {
+                    let point_add = self.camera.get_corner();
+                    self.camera.get_canvas_mut().draw_point(draw_pos + point_add, Color::new(0xFF, 0, 0, 0));
 
-                // Mouse not in canvas
-                if !can_rect.has_point(Point::pair_to_point((position.x as i32, position.y as i32))) {
-                    return;
+                    // Update screen
+                    self.window.as_ref().unwrap().request_redraw();
                 }
 
-                let draw_pos: Point = Point::new(
-                    (position.x as i32 - can_rect.corner.x) / self.camera.get_zoom() as i32,
-                    (position.y as i32 - can_rect.corner.y) / self.camera.get_zoom() as i32
-                );
-
-                println!("can_rect = {:?} ; draw_pos = {:?}", can_rect, draw_pos);
-
-                let point_add = self.camera.get_corner();
-
-                self.camera.get_canvas_mut().draw_point(draw_pos + point_add, Color::new(0xFF, 0, 0, 0));
-
-                // Update screen
-                self.window.as_ref().unwrap().request_redraw();
+                self.mouse.update_position(position);
             },
             WindowEvent::MouseWheel {delta, ..} => {
-                println!("delta: {:?}", delta);
+                // println!("delta: {:?}", delta);
 
                 if let event::MouseScrollDelta::LineDelta(_, val) = delta {
                     // Change zoom
