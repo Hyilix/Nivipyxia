@@ -102,7 +102,6 @@ impl ApplicationHandler for App {
             WindowEvent::Focused(state) => {
                 println!("Window focus is now {state}");
             },
-            // TODO: simplify redraw request function
             WindowEvent::RedrawRequested => {
                 // Measure time elapes for screen update
                 let now = std::time::Instant::now();

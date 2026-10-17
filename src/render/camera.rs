@@ -145,6 +145,11 @@ impl Camera {
         //     self.presentation_area.get_height()
         // );
 
+        // TODO: Panic when full screen and zooming
+        // TODO: Stop drawing entire pixels out of presentation area at big zooms
+        // TODO: Mouse position does not correspond correctly at high zooms
+        // TODO: Make the zooming in/out be done from the center of the area, not the corner
+
         let zone_w = (self.area.width as f32 * self.zoom).min(self.canvas.get_width() as f32 * self.zoom);
         let zone_h = (self.area.height as f32 * self.zoom).min(self.canvas.get_height() as f32 * self.zoom);
 
