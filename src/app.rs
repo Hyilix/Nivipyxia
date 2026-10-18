@@ -22,7 +22,6 @@ use crate::events::{redraw_request};
 use crate::mouse;
 use crate::render::camera;
 
-#[derive(Default)]
 pub struct App {
     window: Option<Rc<dyn Window>>,
     context: Option<Context<Rc<dyn Window>>>,
@@ -30,6 +29,19 @@ pub struct App {
     canvas: canvas::Canvas,
     camera: camera::Camera,
     mouse: mouse::Mouse,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            window: None,
+            context: None,
+            surface: None,
+            canvas: canvas::Canvas::default(),
+            camera: camera::Camera::default(),
+            mouse: mouse::Mouse::default(),
+        }
+    }
 }
 
 impl ApplicationHandler for App {
